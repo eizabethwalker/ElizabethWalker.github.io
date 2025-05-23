@@ -1,0 +1,116 @@
+---
+title: "Analyzing SPY, VGG, and AGG EFTs"
+author: "Elizabeth Walker"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, include=FALSE, echo=FALSE}
+library(tidyverse)
+library(lubridate)
+library(zoo)
+library(ggplot2)
+```
+
+```{r, include=FALSE, echo=FALSE}
+#load datasets
+spy<-read_csv("FUND_US_ARCX_SPY (5yr).csv")
+vti<-read_csv("FUND_US_ARCX_VTI (5yr).csv")
+agg<-read_csv("FUND_US_ARCX_AGG (5yr).csv")
+```
+
+```{r,echo=FALSE}
+#clean data and select columns
+spy<- spy %>%
+  mutate(Date=mdy(Date)) %>%
+  select(Date, SPY=Close)
+vti<- vti %>%
+  mutate(Date=mdy(Date)) %>%
+  select(Date, VTI=Close)
+agg <- agg %>%
+  mutate(Date = mdy(Date)) %>%
+  select(Date, AGG = Close)
+
+#merge data sets by date 
+df_merged<- spy %>%
+  inner_join(vti, by="Date") %>%
+  inner_join(agg, by="Date") %>% 
+  arrange(Date)
+
+#normalize prices for comparison
+df_normalized <- df_merged %>%
+  mutate(
+    SPY=SPY/first(SPY),
+    VTI=VTI/first(VTI),
+    AGG=AGG/first(AGG))
+```
+
+```{r, echo=FALSE}
+#calculate returns
+returns<- diff(as.matrix(df_merged[, -1]))/head(as.matrix(df_merged[,-1]),-1)
+returns<- as.data.frame(returns)
+rownames(returns)<-df_merged$Date[-1]
+```
+
+# Returns for SPY, VTI, and AGG
+
+
+```{r, echo=FALSE}
+head(returns)
+```
+
+```{r, echo=FALSE}
+#rolling volatility
+volatility <-rollapply(returns, width= 30, FUN= function(x){
+  if (nrow(x) <30) return(rep(NA,ncol(x)))
+  apply(x,2,sd)},
+  by.column=FALSE,
+  align="right")
+volatility<-as.data.frame(volatility)
+colnames(volatility)<-colnames(returns)
+rownames(volatility)<-rownames(returns)[30:length(returns[,1])]
+volatility<-volatility*sqrt(252)
+```
+
+# Annual Rolling Volatility for SPY, VTI and AGG
+
+
+```{r, echo=FALSE}
+head(volatility)
+```
+
+```{r, echo=FALSE}
+#Sharpe Ratio
+risk_free_rate_daily<-0.005/252
+mean_returns<-colMeans(returns)
+std_returns<-apply(returns,2,sd)
+sharpe_ratios<-(mean_returns-risk_free_rate_daily)/std_returns
+annual_sharpe<-sharpe_ratios*sqrt(252)
+```
+
+# Sharpe Ratio for SPY, VTI and AGG
+
+
+```{r, echo=FALSE}
+print(annual_sharpe)
+```
+
+# Visualization
+
+
+The following line chart represents the normalized price performance of SPY, VTI, and AGG over a 
+5 year period (1/1/19-12/29/23).
+
+```{r, echo=FALSE}
+df_long <-df_normalized %>%
+  pivot_longer(cols= c(SPY, VTI, AGG), names_to="EFT", values_to="Price")
+
+ggplot(df_long, aes(x=Date, y=Price, color=EFT))+
+  geom_line() +
+  labs(title="Normalized EFT Performance", y="Normalized Price", x="Date")+
+  theme_minimal()
+```
