@@ -17,7 +17,7 @@ I chose to use RStudio to clean, calculate and analyze the data. After completin
 I choose to use MarketWatch as my main data source for SPY, VTI, and AGG's past performance over a 5 year period. MarketWatch is a crediblt source owned by News Corp that presents the data in a organized spreadsheet. 
 
 #### *Cleaning and Merging the Data*
-The data was cleaned by ensuring the date* formats across the three datasets were set to the pattern, Month, Date, Year. This was important for the next step, *merging*, where the three data sets were combined by date.  
+The data was cleaned by ensuring the date formats across the three datasets were set to the pattern, Month, Date, Year. This was important for the next step, *merging*, where the three data sets were combined by date.  
 
 ### Step 2: Calculate Performance & Risk Metrics
 Claculating performance and risk metrics is important to help understanding contributions to portfolio growth, risk management, and being able to compare behavior in different market conditions.
